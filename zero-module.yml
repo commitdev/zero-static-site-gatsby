@@ -16,9 +16,9 @@ template:
   outputDir: 'landing-page'
 
   requiredCredentials:
-  - aws
-  - circleci
-  - github
+    - aws
+    - circleci
+    - github
 
 parameters:
   - field: region

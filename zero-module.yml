@@ -15,10 +15,10 @@ template:
   inputDir: 'templates'
   outputDir: 'landing-page'
 
-  requiredCredentials:
-    - aws
-    - circleci
-    - github
+requiredCredentials:
+  - aws
+  - circleci
+  - github
 
 parameters:
   - field: region

@@ -160,7 +160,7 @@ jobs:
           E.g. 'development' would load configurations from '.env.development'
 
           Note: .env.* file should not be added checked into source control rather should be
-          through your CircleCi's build environtemt variables see: https://circleci.com/docs/2.0/env-vars/#environment-variable-usage-options
+          through your CircleCi's build environment variables see: https://circleci.com/docs/2.0/env-vars/#environment-variable-usage-options
         type: enum
         enum: ["development", "staging", "production"]
         default: production
@@ -223,6 +223,16 @@ workflows:
             #   branches:
             #     only:  # only branches matching the below regex filters will run
             #       - /^master$/
+            
+        - wait_for_approval:
+            type: approval
+            requires:
+              - deploy_staging
+
+        - queue/block_workflow:
+            time: '30' # hold for 30 mins then abort
+            requires:
+              - wait_for_approval
 
         - deploy:
             name: deploy_production

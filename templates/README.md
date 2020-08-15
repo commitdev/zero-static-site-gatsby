@@ -15,24 +15,21 @@ Your application is deployed to an AWS S3 bucket through CircleCi.
 Your repository comes with a end-to-end CI/CD pipeline, which includes the following steps:
 
 1. Checkout
-2. Build for Staging
-3. Deploy Staging
+2. Unit Tests
+3. Build for Staging
 4. Build for Production
-5. Deploy Production
+5. Deploy Staging
+6. Approval Step
+7. Deploy Production
 
 The *Deploy* step does a:
 
 - AWS S3 Bucket Sync
 - Cloudfront Invalidation
 
-To learn more your pipeline checkout your [CircleCi config file](.circleci/config.yml)
-
+To learn more about your pipeline checkout your [CircleCi config file](.circleci/config.yml)
 
 ## Environment Configs
-
-<!-- These are set by `REACT_APP_CONFIG` enviroment variable at build time. This corresponds to a json file in the config directory.
-
-For example to build the staging site and host it you would use: -->
 
 You can provide environment variables to your site to customize its behavior in different environments.
 
@@ -42,8 +39,23 @@ There are environment variables that are defined in special places intended to b
 
 And there are true OS-level environment variables that might be used in command-line calls. You can call these “OS Env Vars”.
 
-<!-- TODO: example goes here-->
+### Project Environment Variables
 
 ```shell
 #example
+#file: .env.development
+GATSBY_API_URL=https://dev.example.com/api
+
+
+#setting the active env variable would load the relevant .env.*
+GATSBY_ACTIVE_ENV=development npm run develop
 ```
+
+*OS Env Vars* are only directly available at build time, or when Node.js is running. They aren’t immediately available at run time of the client code; they need to be actively captured and embedded into client-side JavaScript. This is achieved during the build using webpack’s [DefinePlugin][define-plugin].
+
+learn more about [Gatsby Environment Variables][gatsby-env-var]
+
+<!-- Links -->
+
+[gatsby-env-var]: https://www.gatsbyjs.com/docs/environment-variables/
+[define-plugin]: https://webpack.js.org/plugins/define-plugin/

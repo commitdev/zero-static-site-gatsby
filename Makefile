@@ -1,7 +1,6 @@
 # The following parameters are required:
-# - REPOSITORY
+# - REPOSITORY         this should be your git remote url
 # - CIRCLECI_API_KEY
-#
 
 GITHUB_ORG := $(shell echo ${REPOSITORY} | cut -d "/" -f 2)
 GITHUB_REPO := $(shell echo ${REPOSITORY} | cut -d "/" -f 3)

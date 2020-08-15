@@ -185,7 +185,7 @@ jobs:
       - run:
           name: Invalidate Cloudfront
           command: |
-            export DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items[?contains(@, '<< parameters.bucket >>')]].Id | [0]" | tr -d '"')
+            export DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items[?@=='<< parameters.bucket >>')]].Id | [0]" | tr -d '"')
             aws cloudfront create-invalidation --distribution-id ${DIST_ID} --paths "/*"
 
 workflows:

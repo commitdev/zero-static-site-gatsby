@@ -116,10 +116,12 @@ jobs:
       - image: *build-image
     working_directory: *workspace
     parameters:
-      config:
+      environment:
         description: |
-          The config file you want to build the app using.
-          E.g. 'development' would load configurations from 'config/development.json'
+          The environment config you want to use to build your gatsby site.
+          E.g. 'development' would load configurations from '.env.development'
+
+          Note: .env.* file should not be checked into source control. Instead use CircleCi's build environment variables see: https://circleci.com/docs/2.0/env-vars/#environment-variable-usage-options
         type: enum
         enum: ["development", "staging", "production"]
         default: production
@@ -132,16 +134,16 @@ jobs:
             - v1-pkg-cache-
 
       - run:
-          name: Build static side
+          name: Build static site
           command: |
-            npm i
-            GATSBY_ACTIVE_ENV=<< parameters.config >> npm run build
-            mv public build_<< parameters.config >>
+            npm install
+            GATSBY_ACTIVE_ENV=<< parameters.environment >> npm run build
+            mv public build_<< parameters.environment >>
 
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
-            - build_<< parameters.config >>
+            - build_<< parameters.environment >>
 
       - save_cache: # Store cache
           key: v1-pkg-cache-{{ checksum "package-lock.json" }}
@@ -155,13 +157,12 @@ jobs:
     docker:
       - image: cimg/python:3.6
     parameters:
-      config:
+      environment:
         description: |
-          The config file you want to use to build your gatsby site.
+          The environment config you want to use to build your gatsby site.
           E.g. 'development' would load configurations from '.env.development'
 
-          Note: .env.* file should not be added checked into source control rather should be
-          through your CircleCi's build environment variables see: https://circleci.com/docs/2.0/env-vars/#environment-variable-usage-options
+          Note: .env.* file should not be checked into source control. Instead use CircleCi's build environment variables see: https://circleci.com/docs/2.0/env-vars/#environment-variable-usage-options
         type: enum
         enum: ["development", "staging", "production"]
         default: production
@@ -180,7 +181,7 @@ jobs:
           name: Set AWS region var
           command: echo 'export AWS_REGION=<< parameters.region >>' >> $BASH_ENV
       - aws-s3/sync:
-          from: build_<< parameters.config >>
+          from: build_<< parameters.environment >>
           overwrite: true
           to: 's3://<< parameters.bucket >>'
       - run:
@@ -202,19 +203,19 @@ workflows:
 
         - build:
             name: build_staging
-            config: staging
+            environment: staging
             requires:
               - checkout_code
 
         - build:
             name: build_production
-            config: production
+            environment: production
             requires:
               - checkout_code
 
         - deploy:
             name: deploy_staging
-            config: staging
+            environment: staging
             requires:
               - build_staging
             bucket: "<% index .Params `stagingHostRoot` %>"

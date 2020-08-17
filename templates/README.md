@@ -14,18 +14,20 @@ Your application is deployed to an AWS S3 bucket through CircleCi.
 
 Your repository comes with a end-to-end CI/CD pipeline, which includes the following steps:
 
-1. Checkout
-2. Unit Tests
-3. Build for Staging
-4. Build for Production
-5. Deploy Staging
-6. Approval Step
-7. Deploy Production
+1. Checkout.
+2. Unit Tests.
+3. Build for Staging.
+4. Build for Production.
+5. Deploy Staging.
+6. Approval Step.
+7. Deploy Production.
 
 The *Deploy* step does a:
 
-- AWS S3 Bucket Sync
+- AWS S3 Bucket Sync.
+  - this step copies your bundled build in `public` to an AWS S3 Bucket where it it served.
 - Cloudfront Invalidation
+  - this step instructs CloudFront to invalidated any previously cached distributions.
 
 To learn more about your pipeline checkout your [CircleCi config file](.circleci/config.yml)
 

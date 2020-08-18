@@ -1,0 +1,42 @@
+name: zero-deployable-landing-page
+description: 'zero module for a deployable static landing page on root host domain based on Gatsby new deployed to S3/Cloudfront'
+author: 'Commit'
+
+dependsOn:
+- zero-aws-eks-stack
+
+template:
+  strictMode: true
+  delimiters:
+    - '<%'
+    - '%>'
+  inputDir: 'templates'
+  outputDir: 'landing-page'
+
+requiredCredentials:
+  - aws
+  - circleci
+  - github
+
+parameters:
+  - field: region
+    label: Select AWS Region
+    options:
+      - "us-west-2"
+      - "us-east-1"
+      - "us-east-2"
+  - field: productionHostRoot
+    label: Production Root Host Name (e.g. mydomain.com) - this must be the root of the chosen domain, not a subdomain.
+    fieldValidation:
+      type: regex
+      value: '^([a-z0-9]+(-[a-z0-9]+)*\.{1})+[a-z]{2,}$'
+      errorMessage: Invalid root domain name
+  - field: stagingHostRoot
+    label: Staging Root Host Name (e.g. mydomain-staging.com) - this must be the root of the chosen domain, not a subdomain.
+    fieldValidation:
+      type: regex
+      value: '^([a-z0-9]+(-[a-z0-9]+)*\.{1})+[a-z]{2,}$'
+      errorMessage: Invalid root domain name
+  - field: randomSeed
+    label: Random seed that will be shared between projects to come up with deterministic resource names
+    execute: uuidgen | head -c 8

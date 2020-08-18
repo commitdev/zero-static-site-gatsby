@@ -1,0 +1,250 @@
+---
+version: 2.1
+orbs:
+  aws-s3: circleci/aws-s3@1.0.15
+  queue: eddiewebb/queue@1.3.0
+
+variables:
+  - &workspace /home/circleci/project
+  - &build-image cimg/node:12.18.3
+
+aliases:
+  # Shallow Clone - this allows us to cut the 2 minute repo clone down to about 10 seconds for repos with 50,000 commits+
+  - &checkout-shallow
+    name: Checkout (Shallow)
+    command: |
+      #!/bin/sh
+      set -e
+
+      # Workaround old docker images with incorrect $HOME
+      # check https://github.com/docker/docker/issues/2968 for details
+      if [ "${HOME}" = "/" ]
+      then
+        export HOME=$(getent passwd $(id -un) | cut -d: -f6)
+      fi
+
+      mkdir -p ~/.ssh
+
+      echo 'github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
+      bitbucket.org ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAubiN81eDcafrgMeLzaFPsw2kNvEcqTKl/VqLat/MaB33pZy0y3rJZtnqwR2qOOvbwKZYKiEO1O6VqNEBxKvJJelCq0dTXWT5pbO2gDXC6h6QDXCaHo6pOHGPUy+YBaGQRGuSusMEASYiWunYN0vCAI8QaXnWMXNMdFP3jHAJH0eDsoiGnLPBlBp4TNm6rYI74nMzgz3B9IikW4WVK+dc8KZJZWYjAuORU3jc1c/NPskD2ASinf8v3xnfXeukU0sJ5N6m5E8VLjObPEO+mN2t/FZTMZLiFqPWc/ALSqnMnnhwrNi2rbfg/rd/IpL8Le3pSBne8+seeFVBoGqzHM9yXw==' >> ~/.ssh/known_hosts
+
+      (umask 077; touch ~/.ssh/id_rsa)
+      chmod 0600 ~/.ssh/id_rsa
+      (cat \<<EOF > ~/.ssh/id_rsa
+      $CHECKOUT_KEY
+      EOF
+      )
+
+      # use git+ssh instead of https
+      git config --global url."ssh://git@github.com".insteadOf "https://github.com" || true
+
+      if [ -e /home/circleci/project/.git ]
+      then
+          cd /home/circleci/project
+          git remote set-url origin "$CIRCLE_REPOSITORY_URL" || true
+      else
+          mkdir -p /home/circleci/project
+          cd /home/circleci/project
+          git clone --depth=1 "$CIRCLE_REPOSITORY_URL" .
+      fi
+
+      if [ -n "$CIRCLE_TAG" ]
+      then
+        git fetch --depth=10 --force origin "refs/tags/${CIRCLE_TAG}"
+      elif [[ "$CIRCLE_BRANCH" =~ ^pull\/* ]]
+      then
+      # For PR from Fork
+        git fetch --depth=10 --force origin "$CIRCLE_BRANCH/head:remotes/origin/$CIRCLE_BRANCH"
+      else
+        git fetch --depth=10 --force origin "$CIRCLE_BRANCH:remotes/origin/$CIRCLE_BRANCH"
+      fi
+
+      if [ -n "$CIRCLE_TAG" ]
+      then
+          git reset --hard "$CIRCLE_SHA1"
+          git checkout -q "$CIRCLE_TAG"
+      elif [ -n "$CIRCLE_BRANCH" ]
+      then
+          git reset --hard "$CIRCLE_SHA1"
+          git checkout -q -B "$CIRCLE_BRANCH"
+      fi
+
+      git reset --hard "$CIRCLE_SHA1"
+      pwd
+
+jobs:
+  checkout_code:
+    docker:
+      - image: *build-image
+    steps:
+      - run: *checkout-shallow
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - .
+
+  unit_test:
+    docker:
+      - image: *build-image
+    working_directory: *workspace
+    steps: # steps that comprise the `build` job
+      - attach_workspace:
+          at: *workspace
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - v1-pkg-cache-{{ checksum "package-lock.json" }}
+            - v1-pkg-cache-
+      - run:
+          name: Run unit tests
+          command: |
+            npm install
+            npm run test
+
+      - save_cache: # Store cache
+          key: v1-pkg-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - "node_modules"
+
+      - store_test_results:
+          path: test-reports
+
+      - store_artifacts:
+          path: test-reports
+
+  build:
+    docker:
+      - image: *build-image
+    working_directory: *workspace
+    parameters:
+      environment:
+        description: |
+          The environment config you want to use to build your gatsby site.
+          E.g. 'development' would load configurations from '.env.development'
+
+          Note: .env.* file should not be checked into source control. Instead use CircleCi's build environment variables see: https://circleci.com/docs/2.0/env-vars/#environment-variable-usage-options
+        type: enum
+        enum: ["development", "staging", "production"]
+        default: production
+    steps: # steps that comprise the `build` job
+      - attach_workspace:
+          at: *workspace
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - v1-pkg-cache-{{ checksum "package-lock.json" }}
+            - v1-pkg-cache-
+
+      - run:
+          name: Build static site
+          command: |
+            npm install
+            GATSBY_ACTIVE_ENV=<< parameters.environment >> npm run build
+            mv public build_<< parameters.environment >>
+
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - build_<< parameters.environment >>
+
+      - save_cache: # Store cache
+          key: v1-pkg-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - "node_modules"
+
+      # Requires the SLACK_WEBHOOK env var to be set
+      # - slack/notify-on-failure
+
+  deploy:
+    docker:
+      - image: cimg/python:3.6
+    parameters:
+      environment:
+        description: |
+          The environment config you want to use to build your gatsby site.
+          E.g. 'development' would load configurations from '.env.development'
+
+          Note: .env.* file should not be checked into source control. Instead use CircleCi's build environment variables see: https://circleci.com/docs/2.0/env-vars/#environment-variable-usage-options
+        type: enum
+        enum: ["development", "staging", "production"]
+        default: production
+      bucket:
+        description: The S3 Bucket to sync files to.
+        type: string
+      region:
+        type: string
+        default: ''
+        description: |
+          The region to use for AWS operations.
+    steps:
+      - attach_workspace:
+          at: *workspace
+      - run: # Required by aws-cli
+          name: Set AWS region var
+          command: echo 'export AWS_REGION=<< parameters.region >>' >> $BASH_ENV
+      - aws-s3/sync:
+          from: build_<< parameters.environment >>
+          overwrite: true
+          to: 's3://<< parameters.bucket >>'
+      - run:
+          name: Invalidate Cloudfront
+          command: |
+            export DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items[?@=='<< parameters.bucket >>']].Id | [0]" | tr -d '"')
+            aws cloudfront create-invalidation --distribution-id ${DIST_ID} --paths "/*"
+
+workflows:
+    version: 2
+    # The main workflow. Check out the code, build it, push it, deploy to staging, test, deploy to production
+    build_test_and_deploy:
+      jobs:
+        - checkout_code
+
+        - unit_test:
+            requires:
+              - checkout_code
+
+        - build:
+            name: build_staging
+            environment: staging
+            requires:
+              - checkout_code
+
+        - build:
+            name: build_production
+            environment: production
+            requires:
+              - checkout_code
+
+        - deploy:
+            name: deploy_staging
+            environment: staging
+            requires:
+              - build_staging
+            bucket: "<% index .Params `stagingHostRoot` %>"
+            region: "<% index .Params `region` %>"
+            # Depending on your development flow you may want to also only deploy to staging on master.
+            # filters:
+            #   branches:
+            #     only:  # only branches matching the below regex filters will run
+            #       - /^master$/
+            
+        - wait_for_approval:
+            type: approval
+            requires:
+              - deploy_staging
+
+        - queue/block_workflow:
+            time: '30' # hold for 30 mins then abort
+            requires:
+              - wait_for_approval
+
+        - deploy:
+            name: deploy_production
+            requires:
+              - unit_test
+              - build_production
+              - queue/block_workflow
+            bucket: "<% index .Params `productionHostRoot` %>"
+            region: "<% index .Params `region` %>"
+            filters:
+              branches:
+                only:  # only branches matching the below regex filters will run
+                  - /^master$/

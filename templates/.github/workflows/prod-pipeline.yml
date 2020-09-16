@@ -23,19 +23,19 @@ jobs:
           with: 
             node-version: 12.x
         - run: |
-            yarn
-            yarn test --watchAll=false
+            npm install
+            npm run test
       # Build Code
         - name: Build Static Site
           uses: actions/setup-node@v1
           with: 
             node-version: 12.x  
         - run: |
-            yarn
-            yarn build
+            npm install
+            npm run build
             ls -al
           env:
-            REACT_APP_CONFIG: ${{ env.build_env }}
+            GATSBY_ACTIVE_ENV: ${{ env.build_env }}
       # Upload build to github artifact
         - name: Upload build artifact to Github
           uses: actions/upload-artifact@v1
@@ -67,7 +67,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.region }}
       # Deploy to s3
-      - name: Copy files to the test website with the AWS CLI
+      - name: Sync with S3 
         run: |
           cd stage-build-artifact
           aws s3 sync . s3://${{ env.bucket }}

@@ -46,7 +46,8 @@ jobs:
     name: Deploy To Production
     runs-on: ubuntu-latest
     env:
-      bucket: <% bucket %>
+      bucket: "<% index .Params `productionFrontendSubdomain` %><% index .Params `productionHostRoot` %>"
+      region: "<% index .Params `region` %>"
     steps:
       # Clone repo
       - name: Clone Repository (Latest)

@@ -38,7 +38,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: stage-build-artifact
-          path: build/
+          path: public/
   deploy-stage:
     name: Upload to Amazon S3
     runs-on: ubuntu-latest

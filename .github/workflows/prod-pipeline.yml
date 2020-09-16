@@ -45,6 +45,8 @@ jobs:
   deploy-prod:
     name: Deploy To Production
     runs-on: ubuntu-latest
+    env:
+      bucket: <% bucket %>
     steps:
       # Clone repo
       - name: Clone Repository (Latest)

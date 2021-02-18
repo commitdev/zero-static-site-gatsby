@@ -1,0 +1,7 @@
+.powered-by-zero {
+  float:right;
+}
+
+.powered-by-zero > a{
+  display: inline-block;
+}

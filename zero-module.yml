@@ -40,3 +40,20 @@ parameters:
   - field: randomSeed
     label: Random seed that will be shared between projects to come up with deterministic resource names
     execute: uuidgen | head -c 8
+  - field: CIVendor
+    label: Using either circleCI or github Actions to build / test your repository
+    default: "circleci"
+    options:
+      - "circleci"
+      - "github-actions"
+conditions:
+  - action: ignoreFile
+    matchField: CIVendor
+    whenValue: "circleci"
+    data:
+    - .github/
+  - action: ignoreFile
+    matchField: CIVendor
+    whenValue: "github-actions"
+    data:
+    - .circleci/

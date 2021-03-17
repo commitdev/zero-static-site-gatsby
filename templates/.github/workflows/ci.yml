@@ -47,7 +47,7 @@ jobs:
           uses: actions/upload-artifact@v1
           with:
             name: build-artifact-${{ matrix.env }}
-            path: build/
+            path: public/
         ## This sets `step.outputs` is picked up by `jobs.outputs`, then when the step deploy reads `jobs.outputs`
         ## this provides data and set matrix for the deploy steps. This allows us to specify the data once
         ## and have the subsequence step can pass along the information created during this step.

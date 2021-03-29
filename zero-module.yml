@@ -1,6 +1,7 @@
 name: zero-deployable-landing-page
 description: 'zero module for a deployable static landing page on root host domain based on Gatsby new deployed to S3/Cloudfront'
 author: 'Commit'
+zeroVersion: '>= 0.1.0'
 
 dependsOn:
 - zero-aws-eks-stack
@@ -19,12 +20,42 @@ requiredCredentials:
   - github
 
 parameters:
+  - field: useExistingAwsProfile
+    label: "Use credentials from an existing AWS profile?"
+    options:
+      "yes": "Yes"
+      "no": "No"
+    omitFromProjectFile: yes
+  - field: profilePicker
+    omitFromProjectFile: yes
+    type: AWSProfilePicker
+    conditions:
+    - action: KeyMatchCondition
+      whenValue: "yes"
+      matchField: useExistingAwsProfile
+  - field: accessKeyId
+    label: AWS AccessKeyId
+    envVarName: "AWS_ACCESS_KEY_ID"
+    conditions:
+    - action: KeyMatchCondition
+      whenValue: "no"
+      matchField: useExistingAwsProfile
+  - field: secretAccessKey
+    envVarName: "AWS_SECRET_ACCESS_KEY"
+    label: AWS SecretAccessKey
+    conditions:
+    - action: KeyMatchCondition
+      whenValue: "no"
+      matchField: useExistingAwsProfile
+  - field: githubAccessToken
+    label: "Github API Key to setup your repository and optionally CI/CD"
+    envVarName: GITHUB_ACCESS_TOKEN
   - field: region
     label: Select AWS Region
     options:
-      - "us-west-2"
-      - "us-east-1"
-      - "us-east-2"
+      "us-west-2": "us-west-2"
+      "us-east-1": "us-east-1"
+      "us-east-2": "us-east-2"
   - field: productionHostRoot
     label: Production Root Host Name (e.g. mydomain.com) - this must be the root of the chosen domain, not a subdomain.
     fieldValidation:
@@ -44,8 +75,15 @@ parameters:
     label: Using either circleCI or github Actions to build / test your repository
     default: "circleci"
     options:
-      - "circleci"
-      - "github-actions"
+      "circleci": "CircleCi"
+      "github-actions": "Github Actions"
+  - field: circleciApiKey
+    label: "Circle CI API Key to setup your CI/CD for repositories"
+    envVarName: CIRCLECI_API_KEY
+    conditions:
+    - action: KeyMatchCondition
+      matchField: CIVendor
+      whenValue: "circleci"
 conditions:
   - action: ignoreFile
     matchField: CIVendor

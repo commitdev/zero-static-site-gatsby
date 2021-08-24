@@ -1,4 +1,4 @@
-# Zero Deployable Landing Page
+# Zero Static Site - Gatsby
 
 This is a [Zero] module which sets up a
 Gatsby site bundled and statically served through CloudFront and S3 from the [zero-aws-eks-stack][zero-infra].
@@ -64,6 +64,5 @@ Project board: [zenhub][zenhub-board]
 <!-- Links -->
 [zero]: https://github.com/commitdev/zero
 [zero-infra]: https://github.com/commitdev/zero-aws-eks-stack
-[zero-deployable-backend]: https://github.com/commitdev/zero-deployable-backend
 
 [zenhub-board]: https://app.zenhub.com/workspaces/commit-zero-5da8decc7046a60001c6db44/board?filterLogic=any&repos=203630543,247773730,257676371,258369081

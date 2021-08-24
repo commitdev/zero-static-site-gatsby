@@ -38,7 +38,7 @@ github_actions_setup:
 	sh scripts/gha-setup.sh setup
 
 summary:
-	@echo "zero-deployable-landing-page:"
+	@echo "zero-static-site-gatsby:"
 	@echo "- Repository URL: ${REPOSITORY}"
 	@echo "- Deployment Pipeline URL: https://app.circleci.com/pipelines/github/${GITHUB_ORG}/${GITHUB_REPO}"
 	@echo $(shell echo ${ENVIRONMENT} | grep prod > /dev/null && echo "- Production Landing Page: ${productionHostRoot}")

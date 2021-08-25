@@ -1,5 +1,5 @@
-name: zero-deployable-landing-page
-description: 'zero module for a deployable static landing page on root host domain based on Gatsby new deployed to S3/Cloudfront'
+name: zero-static-site-gatsby
+description: 'Zero module for a static landing page built with Gatsby and deployed to S3/Cloudfront'
 author: 'Commit'
 zeroVersion: '>= 0.1.1'
 commands:
